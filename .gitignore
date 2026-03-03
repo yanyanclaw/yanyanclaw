@@ -1,0 +1,21 @@
+# OpenClaw sensitive files
+.openclaw/credentials/
+.openclaw/telegram/
+.openclaw/devices/
+.openclaw/identity/
+.openclaw/logs/
+.openclaw/canvas/
+.openclaw/update-check.json
+.openclaw/workspace/
+.openclaw/openclaw.json
+.openclaw/openclaw.json.bak
+
+# Agent auth and sessions
+.openclaw/agents/main/agent/auth-profiles.json
+.openclaw/agents/main/sessions/
+
+# Claude Code local settings
+.claude/
+
+# Misc
+hello
