@@ -83,8 +83,12 @@ for i, t in enumerate(data, 1):
     # Real-time price
     p = t.get('price')
     if p and p.get('price'):
-        chg = f\"（{'+' if p['change_pct'] >= 0 else ''}{p['change_pct']}%）\" if p.get('change_pct') is not None else ''
-        lines.append(f\"即時股價：{p['symbol']} {p['price']} {p['currency']}{chg}\")
+        chg = ''
+        if p.get('change_pct') is not None and p['change_pct'] != 0:
+            sign = '+' if p['change_pct'] > 0 else ''
+            chg = f\" ({sign}{p['change_pct']}%)\"
+        name = f\" {p['name']}\" if p.get('name') else ''
+        lines.append(f\"{p['label']}價：{p['symbol']}{name} {p['price']}{chg}\")
     else:
         lines.append('即時股價：無法取得')
     lines.append('')

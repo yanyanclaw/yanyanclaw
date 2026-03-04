@@ -122,49 +122,84 @@ def ticker_from_title(base_title):
     return ticker if ticker else text[:12]
 
 
-def yahoo_symbol(ticker):
-    """Convert PTT ticker to Yahoo Finance symbol."""
-    t = ticker.upper()
-    # Pure digits → Taiwan stock/ETF
-    if re.match(r"^\d{4,6}$", t):
-        return t + ".TW"
-    # Digits + single letter suffix (e.g., 00878B)
-    if re.match(r"^\d{4,6}[A-Z]$", t):
-        return t + ".TW"
-    # Taiwan futures keywords → use TWII index as proxy
-    if any(k in ticker for k in ("指期", "台指", "小台", "期貨")):
-        return "^TWII"
-    # Otherwise treat as US ticker
-    return t
+def fetch_price_twse(code):
+    """Fetch Taiwan stock price from TWSE MIS API (tse_ then otc_ fallback)."""
+    for prefix in ("tse", "otc"):
+        url = (
+            f"https://mis.twse.com.tw/stock/api/getStockInfo.jsp"
+            f"?ex_ch={prefix}_{code}.tw&_=1"
+        )
+        raw = fetch(url, timeout=10)
+        if not raw:
+            continue
+        try:
+            j = json.loads(raw)
+            arr = j.get("msgArray", [])
+            if not arr:
+                continue
+            d = arr[0]
+            prev_close = float(d["y"]) if d.get("y") and d["y"] != "-" else None
+            current = float(d["z"]) if d.get("z") and d["z"] != "-" else None
+            price = current or prev_close
+            if not price:
+                continue
+            change_pct = None
+            if current and prev_close and prev_close != 0:
+                change_pct = round((current - prev_close) / prev_close * 100, 2)
+            label = "即時" if current else "昨收"
+            return {
+                "symbol": code,
+                "name": d.get("n", ""),
+                "price": price,
+                "change_pct": change_pct,
+                "currency": "TWD",
+                "label": label,
+            }
+        except Exception as e:
+            sys.stderr.write(f"[price_twse] {code}: {e}\n")
+    return None
 
 
-def fetch_price(ticker):
-    """Fetch real-time price from Yahoo Finance. Returns dict or None."""
-    symbol = yahoo_symbol(ticker)
-    url = (
-        f"https://query1.finance.yahoo.com/v8/finance/chart/"
-        f"{urllib.parse.quote(symbol)}?interval=1d&range=1d"
-    )
-    raw = fetch(url, extra_headers={"Accept": "application/json"}, timeout=10)
+def fetch_price_stooq(symbol):
+    """Fetch price from Stooq CSV API (for US stocks and TW futures)."""
+    url = f"https://stooq.com/q/l/?s={urllib.parse.quote(symbol)}&f=sd2t2ohlcv&h&e=csv"
+    raw = fetch(url, timeout=10)
     if not raw:
         return None
     try:
-        j = json.loads(raw)
-        meta = j["chart"]["result"][0]["meta"]
-        price = meta.get("regularMarketPrice") or meta.get("previousClose")
-        prev = meta.get("previousClose") or meta.get("chartPreviousClose")
-        change_pct = None
-        if price and prev and prev != 0:
-            change_pct = round((price - prev) / prev * 100, 2)
+        lines = raw.strip().split("\n")
+        if len(lines) < 2:
+            return None
+        vals = lines[1].split(",")
+        # Symbol,Date,Time,Open,High,Low,Close,Volume
+        if len(vals) < 7 or vals[1] == "N/D":
+            return None
+        close = float(vals[6])
+        open_ = float(vals[3])
+        change_pct = round((close - open_) / open_ * 100, 2) if open_ else None
         return {
-            "symbol": symbol,
-            "price": round(price, 2) if price else None,
+            "symbol": symbol.upper(),
+            "price": close,
             "change_pct": change_pct,
-            "currency": meta.get("currency", ""),
+            "currency": "USD",
+            "label": "收盤",
         }
     except Exception as e:
-        sys.stderr.write(f"[price] {symbol}: {e}\n")
+        sys.stderr.write(f"[price_stooq] {symbol}: {e}\n")
         return None
+
+
+def fetch_price(ticker):
+    """Route ticker to the right price source."""
+    t = ticker.strip()
+    # Taiwan futures keywords → Stooq TX.F
+    if any(k in t for k in ("指期", "台指", "小台")):
+        return fetch_price_stooq("TX.F")
+    # Pure digits (or digits+letter) → Taiwan listed stock via TWSE
+    if re.match(r"^\d{4,6}[A-Za-z]?$", t):
+        return fetch_price_twse(t.upper())
+    # Otherwise → US stock via Stooq
+    return fetch_price_stooq(f"{t.upper()}.US")
 
 
 def google_news(ticker, max_items=4):
