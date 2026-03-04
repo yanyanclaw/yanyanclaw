@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch PTT Stock [標的] threads: content + Google News, output JSON."""
+"""Fetch PTT Stock [標的] threads: content + real-time price + Google News."""
 import sys
 import re
 import json
@@ -36,7 +36,6 @@ def board_articles():
     articles = []
     seen_aids = set()
 
-    # Split on articleAid: each block starts with the AID value
     for part in re.split(r'articleAid:"', html)[1:]:
         m = re.match(r"(M\.[0-9A-Za-z.]+)\"", part)
         if not m:
@@ -45,7 +44,6 @@ def board_articles():
         if aid in seen_aids:
             continue
 
-        # Title is usually within 700 chars after articleAid
         tm = re.search(r'title:"([^"]+)"', part[:700])
         if not tm or "[標的]" not in tm.group(1):
             continue
@@ -82,13 +80,9 @@ def article_content(aid, max_chars=700):
     if not m:
         return ""
 
-    # Strip tags
     text = re.sub(r"<[^>]+>", "", m.group(1))
     lines = text.split("\n")
 
-    # First line is merged metadata — skip it
-    # Collect body until the "--" signature separator
-    # PTT [標的] template lines to always strip
     TEMPLATE = re.compile(
         r"^\(例\s|^請選擇並刪除|^非長期投資者|^討論、心得類|^\(請選擇"
     )
@@ -102,20 +96,75 @@ def article_content(aid, max_chars=700):
         body.append(line)
 
     result = "\n".join(body).strip()
-    # Trim excessive blank lines
     result = re.sub(r"\n{3,}", "\n\n", result)
     return result[:max_chars]
 
 
-def ticker_from(base_title):
-    """Extract the stock ticker / code from a [標的] base title."""
+def ticker_from_content(content):
+    """Extract ticker from article '標的：' line (most reliable source)."""
+    m = re.search(r"^標的[：:]\s*(.+)", content, re.MULTILINE)
+    if not m:
+        return None
+    raw = m.group(1).strip()
+    # Take first token, strip parentheses and Chinese
+    raw = re.sub(r"[（(（].*", "", raw).strip()
+    ticker = raw.split()[0] if raw.split() else raw
+    return ticker if ticker else None
+
+
+def ticker_from_title(base_title):
+    """Fallback: extract ticker from [標的] base title."""
     text = re.sub(r"\[標的\]\s*", "", base_title).strip()
     parts = text.split()
     if not parts:
         return text[:12]
-    # Clean punctuation from first token
     ticker = re.sub(r"[^\w.]", "", parts[0])
     return ticker if ticker else text[:12]
+
+
+def yahoo_symbol(ticker):
+    """Convert PTT ticker to Yahoo Finance symbol."""
+    t = ticker.upper()
+    # Pure digits → Taiwan stock/ETF
+    if re.match(r"^\d{4,6}$", t):
+        return t + ".TW"
+    # Digits + single letter suffix (e.g., 00878B)
+    if re.match(r"^\d{4,6}[A-Z]$", t):
+        return t + ".TW"
+    # Taiwan futures keywords → use TWII index as proxy
+    if any(k in ticker for k in ("指期", "台指", "小台", "期貨")):
+        return "^TWII"
+    # Otherwise treat as US ticker
+    return t
+
+
+def fetch_price(ticker):
+    """Fetch real-time price from Yahoo Finance. Returns dict or None."""
+    symbol = yahoo_symbol(ticker)
+    url = (
+        f"https://query1.finance.yahoo.com/v8/finance/chart/"
+        f"{urllib.parse.quote(symbol)}?interval=1d&range=1d"
+    )
+    raw = fetch(url, extra_headers={"Accept": "application/json"}, timeout=10)
+    if not raw:
+        return None
+    try:
+        j = json.loads(raw)
+        meta = j["chart"]["result"][0]["meta"]
+        price = meta.get("regularMarketPrice") or meta.get("previousClose")
+        prev = meta.get("previousClose") or meta.get("chartPreviousClose")
+        change_pct = None
+        if price and prev and prev != 0:
+            change_pct = round((price - prev) / prev * 100, 2)
+        return {
+            "symbol": symbol,
+            "price": round(price, 2) if price else None,
+            "change_pct": change_pct,
+            "currency": meta.get("currency", ""),
+        }
+    except Exception as e:
+        sys.stderr.write(f"[price] {symbol}: {e}\n")
+        return None
 
 
 def google_news(ticker, max_items=4):
@@ -153,7 +202,6 @@ def main():
         print("[]")
         return
 
-    # Group into threads: base_title → {main, replies}
     threads = defaultdict(lambda: {"main": None, "replies": []})
     for a in articles:
         if a["is_reply"]:
@@ -165,22 +213,20 @@ def main():
     for base, thread in threads.items():
         main_post = thread["main"]
         if not main_post:
-            # Reply with no main post on current page — skip
             continue
 
-        ticker = ticker_from(base)
-        sys.stderr.write(f"[thread] {ticker}: {base}\n")
-
-        # Main post content
         main_content = article_content(main_post["aid"], max_chars=700)
 
-        # Top replies (up to 2, by appearance order)
+        # Prefer ticker from article content over title
+        ticker = ticker_from_content(main_content) or ticker_from_title(base)
+        sys.stderr.write(f"[thread] {ticker}: {base}\n")
+
         replies_data = []
         for reply in thread["replies"][:2]:
             content = article_content(reply["aid"], max_chars=350)
             replies_data.append({"url": reply["url"], "content": content})
 
-        # News
+        price = fetch_price(ticker)
         news = google_news(ticker)
 
         result.append(
@@ -192,6 +238,7 @@ def main():
                 "main_content": main_content,
                 "reply_count": len(thread["replies"]),
                 "replies": replies_data,
+                "price": price,
                 "news": news,
             }
         )
