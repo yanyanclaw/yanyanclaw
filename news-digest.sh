@@ -34,7 +34,7 @@ $ARTICLES
 注意：URL 必須來自原始資料，不可省略，單獨放在第二行。只輸出彙整結果，不需要說明。"
 
 # 讓 AI 生成摘要（不 deliver，只取輸出）
-SUMMARY=$(openclaw agent --message "$PROMPT" --timeout 120000 2>&1)
+SUMMARY=$(openclaw agent --agent main --message "$PROMPT" --timeout 120000 2>&1)
 
 # 透過 Telegram Bot API 傳送，關閉連結預覽
 curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \

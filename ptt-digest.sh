@@ -100,7 +100,7 @@ print('\n'.join(lines))
 ")
 
 echo "[ptt-digest] Running AI analysis (timeout 3 min)..."
-ANALYSIS=$(openclaw agent --message "$PROMPT" --timeout 180000 2>&1)
+ANALYSIS=$(openclaw agent --agent main --message "$PROMPT" --timeout 180000 2>&1)
 
 # Fallback if AI returned nothing
 if [ -z "$ANALYSIS" ]; then
