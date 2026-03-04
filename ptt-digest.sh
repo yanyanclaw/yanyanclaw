@@ -46,39 +46,55 @@ with open('$STATE_FILE') as f:
 data = [t for t in raw if t['main_aid'] not in seen]
 
 lines = [
-    '你是台股/美股分析師助理。以下是今日 PTT 股票板[標的]文章，請逐篇分析後輸出報告。',
+    '你是資深台股/美股投資人，熟悉 PTT 股票板文化。',
     '',
-    '每篇格式：',
-    '【{ticker} · {標題}】',
-    '方向：多 / 空 / 觀望',
-    '機會：（1句）',
-    '風險：（1句）',
-    '新聞：（摘要相關新聞，若無填「無」）',
-    '評價：值得參考 ★★★ / 普通 ★★ / 無參考價值 ★',
-    '🔗 {url}',
+    '【PTT [標的]文章格式說明】',
+    '標的：股票代號或期貨名稱',
+    '分類：多 / 空 / 當沖 / 存股 等',
+    '分析/正文：作者的技術面、基本面、籌碼面分析',
+    '進退場機制：停損/停利點位',
     '',
-    '最後加上：',
-    '【今日總結】（2句整體方向）',
+    '【評分標準】',
+    '★★★ 值得參考：有明確股票代號、具體進退場點位、有實質分析（技術/基本/籌碼面）',
+    '★★  普通：有分析方向但細節不足，或缺少明確停損點',
+    '★   無參考價值：過於模糊、純情緒喊多空、無任何分析依據',
     '',
-    '=== 文章資料 ===',
+    '【每篇輸出格式】（直接輸出，不要加前言或說明）',
+    '━━━━━━━━━━━━━━━━',
+    '標的名稱 · 方向（多▲ / 空▼ / 觀望◆）',
+    '機會：（1句，具體說明）',
+    '風險：（1句，具體說明）',
+    '新聞：（摘要1句，若無相關填「無」）',
+    '評價：★★★ / ★★ / ★　理由：（10字內）',
+    '🔗 連結',
+    '━━━━━━━━━━━━━━━━',
+    '',
+    '全部分析完後輸出：',
+    '【今日市場觀察】（2句，整體方向與今日重點標的）',
+    '',
+    '=== 待分析文章 ===',
     '',
 ]
 
-for t in data:
-    lines.append(f\"── 標的：{t['ticker']}  回文數：{t['reply_count']} ──\")
+for i, t in enumerate(data, 1):
+    lines.append(f\"【文章 {i}】回文數：{t['reply_count']}\")
     lines.append(f\"標題：{t['base_title']}\")
     lines.append(f\"連結：{t['main_url']}\")
+    lines.append('')
     lines.append('主文：')
     lines.append(t['main_content'] if t['main_content'] else '（無法取得）')
     if t['replies']:
-        for i, r in enumerate(t['replies'], 1):
-            lines.append(f\"回文{i}：\")
+        lines.append('')
+        for j, r in enumerate(t['replies'], 1):
+            lines.append(f\"回文{j}：\")
             lines.append(r['content'] if r['content'] else '（無內容）')
     if t['news']:
-        lines.append('新聞：')
+        lines.append('')
+        lines.append('相關新聞：')
         for n in t['news'][:3]:
-            lines.append(f\"・{n['title']}\")
+            lines.append(f\"  ・{n['title']}\")
     lines.append('')
+    lines.append('---')
 
 print('\n'.join(lines))
 ")

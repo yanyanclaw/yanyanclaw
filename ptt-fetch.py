@@ -88,12 +88,16 @@ def article_content(aid, max_chars=700):
 
     # First line is merged metadata — skip it
     # Collect body until the "--" signature separator
+    # PTT [標的] template lines to always strip
+    TEMPLATE = re.compile(
+        r"^\(例\s|^請選擇並刪除|^非長期投資者|^討論、心得類|^\(請選擇"
+    )
+
     body = []
     for line in lines[1:]:
         if re.match(r"^--\s*$", line):
             break
-        # Skip PTT template filler lines
-        if re.match(r"^\(例\s|^請選擇|^非長期投資|^\s*$", line) and not body:
+        if TEMPLATE.match(line):
             continue
         body.append(line)
 
