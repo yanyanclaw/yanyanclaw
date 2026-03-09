@@ -1,21 +1,22 @@
-# OpenClaw sensitive files
-.openclaw/credentials/
-.openclaw/telegram/
-.openclaw/devices/
-.openclaw/identity/
-.openclaw/logs/
-.openclaw/canvas/
-.openclaw/update-check.json
-.openclaw/workspace/
-.openclaw/openclaw.json
-.openclaw/openclaw.json.bak
+# Secrets
+.env
 
-# Agent auth and sessions
-.openclaw/agents/main/agent/auth-profiles.json
-.openclaw/agents/main/sessions/
+# OpenClaw local runtime (整個 .openclaw/ 目錄)
+.openclaw/
 
-# Claude Code local settings
+# Workspace runtime files (openclaw 會在 workspace 裡寫入)
+workspace/.openclaw/
+workspace/memory/
+workspace/stocks-news/
+workspace/stocks-news.md
+workspace/MEMORY.md
+workspace/BOOTSTRAP.md
+
+# Claude Code
 .claude/
+
+# OS
+.DS_Store
 
 # Misc
 hello

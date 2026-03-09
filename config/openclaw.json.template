@@ -1,0 +1,166 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.3.1",
+    "lastTouchedAt": "2026-03-05T20:30:16.987Z"
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "ollama": {
+        "baseUrl": "http://localhost:11434",
+        "models": [
+          {
+            "id": "qwen2.5:14b",
+            "name": "qwen2.5:14b"
+          }
+        ]
+      },
+      "mistral": {
+        "baseUrl": "https://api.mistral.ai/v1",
+        "api": "openai-completions",
+        "apiKey": "<MISTRAL_API_KEY>",
+        "models": [
+          {
+            "id": "mistral-small-latest",
+            "name": "Mistral Small"
+          },
+          {
+            "id": "open-mistral-nemo",
+            "name": "Mistral Nemo (free)"
+          },
+          {
+            "id": "magistral-small-latest",
+            "name": "Magistral Small (reasoning)"
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "google/gemini-2.0-flash-lite",
+        "fallbacks": [
+          "google/gemini-2.5-flash",
+          "mistral/magistral-small-latest",
+          "mistral/open-mistral-nemo"
+        ]
+      },
+      "workspace": "/root/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      },
+      "maxConcurrent": 4,
+      "subagents": {
+        "maxConcurrent": 8
+      },
+      "models": {
+        "google/gemini-2.0-flash-lite": {},
+        "google/gemini-2.5-flash": {},
+        "mistral/open-mistral-nemo": {},
+        "mistral/magistral-small-latest": {}
+      }
+    },
+    "list": [
+      {
+        "id": "main"
+      },
+      {
+        "id": "stock-manager",
+        "name": "Stock Manager",
+        "workspace": "/root/.openclaw/workspace-stock",
+        "agentDir": "/root/.openclaw/agents/stock-manager"
+      },
+      {
+        "id": "coder",
+        "name": "Coder",
+        "workspace": "/root/.openclaw/workspace-coder",
+        "agentDir": "/root/.openclaw/agents/coder"
+      },
+      {
+        "id": "story-to-html",
+        "name": "Story to HTML",
+        "workspace": "/root/.openclaw/workspace"
+      }
+    ]
+  },
+  "tools": {
+    "profile": "full",
+    "elevated": {
+      "enabled": false,
+      "allowFrom": {
+        "telegram": [
+          "<TELEGRAM_USER_ID>"
+        ]
+      }
+    },
+    "exec": {
+      "timeoutSec": 60
+    }
+  },
+  "messages": {
+    "ackReactionScope": "group-mentions"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "session-memory": {
+          "enabled": true
+        },
+        "bootstrap-extra-files": {
+          "enabled": true
+        },
+        "command-logger": {
+          "enabled": true
+        },
+        "boot-md": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "pairing",
+      "botToken": "<TELEGRAM_BOT_TOKEN>",
+      "groupPolicy": "open",
+      "streaming": "partial"
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "<GATEWAY_AUTH_TOKEN>"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "skills": {
+    "install": {
+      "nodeManager": "npm"
+    }
+  },
+  "plugins": {
+    "entries": {
+      "telegram": {
+        "enabled": true
+      }
+    }
+  }
+}
