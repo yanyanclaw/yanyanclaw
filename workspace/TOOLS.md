@@ -101,38 +101,6 @@ EOF
 
 ---
 
-## 管理持股清單
-
-**holdings 檔案路徑**：`/root/.openclaw/stock_data/holdings.json`
-
-格式：`{"holdings": [{"ticker": "2327", "name": "國巨"}]}`
-
-### 新增持股
-用戶說「加入 XXXX」、「新增持股 XXXX」、「追蹤 XXXX」時：
-```exec
-python3 -c "
-import json; f='/root/.openclaw/stock_data/holdings.json'
-d=json.load(open(f)); d['holdings'].append({'ticker':'XXXX','name':'名稱'})
-json.dump(d,open(f,'w'),ensure_ascii=False,indent=2)
-print('done')
-"
-```
-
-### 移除持股
-用戶說「移除 XXXX」時：
-```exec
-python3 -c "
-import json; f='/root/.openclaw/stock_data/holdings.json'
-d=json.load(open(f)); d['holdings']=[h for h in d['holdings'] if h['ticker']!='XXXX']
-json.dump(d,open(f,'w'),ensure_ascii=False,indent=2)
-"
-```
-
-### 查看持股清單
-```exec
-python3 /root/show-holdings.py
-```
-
 ---
 
 ## 現有小說《我其實是黑貓可是被變成了白貓》
