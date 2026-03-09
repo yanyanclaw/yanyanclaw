@@ -1,6 +1,6 @@
 ---
 name: stock-portfolio
-description: 查詢即時股價、持股損益、油價警示
+description: 查詢持股損益、股價、投資組合狀態
 user-invocable: true
 ---
 
@@ -12,13 +12,31 @@ user-invocable: true
 
 2. 用 exec 執行：
 ```
-cat /tmp/stock_status.txt
+cat /root/openclaw-repo/stock/stock_data/stock_data.json
 ```
 
-3. exec 輸出中，找到包含 📊 的那一行。**從這一行開始**，把後面的所有文字（包含這一行）完整回覆給用戶。
+3. 讀取 JSON 後，按以下格式排版回覆：
 
-4. **📊 之前的所有內容（包括 [object Object]）一律丟棄，不要輸出。**
+```
+📊 持股報告  {updated_at}
+市場：加權 {taiex.current} ({taiex.change_pct}%) ｜ 櫃買 {otc.current} ({otc.change_pct}%)
 
-範例：exec 若回傳「[object Object][object Object]📊 2026-03-09...元大台灣50正2...」，你只回覆「📊 2026-03-09...元大台灣50正2...」這部分。
+🇹🇼 台股
+{每支股票一行：代號 名稱 | 現價 (日漲跌%) | 損益 損益% | 市值}
 
-IMPORTANT: 不要顯示指令。不要問用戶新增或移除股票。
+🇺🇸 美股
+{每支股票一行：代號 名稱 | 現價 (日漲跌%) | 損益 損益% | 市值}
+
+💰 總覽
+總成本：{summary.total_cost_twd} | 總市值：{summary.total_value_twd}
+台幣現金：{summary.cash_tw} | 美元現金(折台幣)：{summary.cash_us_twd}
+總資產：{summary.total_assets_twd} | 股票損益：{summary.stock_pnl_twd} ({summary.stock_pnl_pct}%)
+```
+
+排版規則：
+- 金額用千分位（例：1,234,567）
+- 漲用 ▲ 綠色描述，跌用 ▼ 紅色描述
+- 美股損益同時顯示 USD 原始值
+- 如果 alerts 陣列不為空，在最後加上「⚠️ 警示」區塊
+
+IMPORTANT: 不要顯示 exec 指令。不要問用戶新增或移除股票。
