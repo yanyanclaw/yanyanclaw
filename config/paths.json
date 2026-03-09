@@ -1,0 +1,22 @@
+{
+  "local": {
+    "repo": "/Users/yan/Documents/workspace/openclaw",
+    "openclaw_home": null,
+    "stock_data": null,
+    "scripts": "/Users/yan/Documents/workspace/openclaw/scripts",
+    "workspace": "/Users/yan/Documents/workspace/openclaw/workspace",
+    "workspace_coder": "/Users/yan/Documents/workspace/openclaw/workspace-coder",
+    "workspace_stock": "/Users/yan/Documents/workspace/openclaw/workspace-stock",
+    "story_dir": null
+  },
+  "remote": {
+    "repo": "/root/openclaw-repo",
+    "openclaw_home": "/root/.openclaw",
+    "stock_data": "/root/.openclaw/stock_data",
+    "scripts": "/root/openclaw-repo/scripts",
+    "workspace": "/root/.openclaw/workspace",
+    "workspace_coder": "/root/.openclaw/workspace-coder",
+    "workspace_stock": "/root/.openclaw/workspace-stock",
+    "story_dir": "/root/workspace/story/novel-xiuxian-cat"
+  }
+}

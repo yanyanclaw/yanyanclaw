@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import json, os, sys, urllib.request
 from datetime import datetime
+from paths import get_paths
 
-NEWS_DIR = "/root/.openclaw/stock_data/news"
+NEWS_DIR = os.path.join(get_paths()["stock_data"], "news")
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "qwen2.5:14b"
 
