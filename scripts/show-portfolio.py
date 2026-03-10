@@ -9,7 +9,7 @@ import json
 import os
 import sys
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 DATA_FILE = os.path.join(SCRIPT_DIR, "..", "stock", "stock_data", "stock_data.json")
 
 
