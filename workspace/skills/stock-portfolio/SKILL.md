@@ -1,7 +1,7 @@
 ---
 name: stock-portfolio
 description: 查詢持股損益、股價、投資組合狀態
-user-invokable: true
+user-invocable: true
 ---
 
 # Stock Portfolio
