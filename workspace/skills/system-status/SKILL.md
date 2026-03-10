@@ -1,7 +1,7 @@
 ---
 name: system-status
 description: Check machine health, network usage, Ollama connection, and OpenClaw gateway status
-user-invocable: true
+user-invokable: true
 ---
 
 # System Status

@@ -1,7 +1,7 @@
 ---
 name: stock-news
 description: Show latest news for tracked stocks (0050, 2330, 2327 國巨, 2406 國碩)
-user-invocable: true
+user-invokable: true
 ---
 
 # Stock News
