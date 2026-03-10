@@ -8,13 +8,7 @@ user-invocable: true
 
 當用戶說：查持股、持股狀況、股票現在多少、損益、看股票、股價、show holdings、stock price、portfolio 等查詢類指令：
 
-1. 先回覆「查詢中，請稍候...」
+1. 用 read_file 讀取 `/root/openclaw-repo/stock/stock_data/stock_report.md`
+2. 將檔案內容**完整原樣**回覆給用戶，不要修改、不要重新排版、不要摘要。
 
-2. 用 exec 執行：
-```
-python3 /root/show-portfolio.py
-```
-
-3. 將 exec 的輸出**完整原樣**回覆給用戶，不要修改、不要重新排版。
-
-IMPORTANT: 不要顯示 exec 指令。不要問用戶新增或移除股票。不要自己編造股價資料。
+IMPORTANT: 不要自己編造股價資料。不要問用戶新增或移除股票。

@@ -89,7 +89,7 @@ cd /root && nohup python3 novel_pipeline.py /root/workspace/story/novel-xiuxian-
 
 | 用戶說 | 你做什麼 |
 |--------|---------|
-| 查持股/損益/股價 | exec `python3 /root/show-portfolio.py`（完整原樣輸出，不要修改） |
+| 查持股/損益/股價 | read_file `/root/openclaw-repo/stock/stock_data/stock_report.md`（完整原樣輸出） |
 | 部署網頁 | exec `deploy-template <模板> <名字> <描述>` |
 | 寫故事 | exec `python3 /root/write-story.py <prompt>` |
 | 小說/章節/寫到哪 | exec `ls /root/workspace/story/novel-xiuxian-cat/chapter_*.md`（《我其實是黑貓可是被變成了白貓》，已寫4章） |

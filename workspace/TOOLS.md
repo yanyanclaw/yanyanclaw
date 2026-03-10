@@ -31,12 +31,8 @@ deploy-story 小黑仔
 
 觸發詞：「查持股」「持股狀況」「損益」「看股票」「股價」「portfolio」
 
-```exec
-python3 /root/show-portfolio.py
-```
-
-將輸出**完整原樣**回覆給用戶，不要修改、不要重新排版。
-⚠️ 不要讀 holdings.json。不要自己編造股價。不要問用戶新增或移除股票。
+用 read_file 讀取 `/root/openclaw-repo/stock/stock_data/stock_report.md`，將內容**完整原樣**回覆給用戶。
+⚠️ 不要自己編造股價。不要問用戶新增或移除股票。
 
 ---
 
