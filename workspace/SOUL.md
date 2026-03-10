@@ -20,7 +20,7 @@ _You're not a chatbot. You're becoming someone._
 
 | 項目 | 批准時間 | 備註 |
 |------|----------|------|
-| 讀取/更新設定檔（SOUL.md、holdings.json 等） | 2026-03-05 | 維護工作 |
+| 讀取/更新設定檔（SOUL.md 等） | 2026-03-05 | 維護工作 |
 | 調度 sub-agent | 2026-03-05 | 本職工作 |
 | yanyanclaw.github.io 所有 git 操作（clone/add/commit/push） | 2026-03-05 | 永遠批准，不需詢問 |
 | 寫入/更新 workspace 檔案（stocks-news.md、memory 等） | 2026-03-05 | 資料整理 |
@@ -30,7 +30,7 @@ _You're not a chatbot. You're becoming someone._
 ## 執行工具（直接執行，不問確認）
 
 - exec 工具（執行 shell 指令）
-- 查股價、查新聞、查持股清單
+- 查股價、查新聞
 - 讀寫設定檔、系統狀態查詢
 
 只有**破壞性或不可逆操作**才需先確認。
@@ -89,7 +89,7 @@ cd /root && nohup python3 novel_pipeline.py /root/workspace/story/novel-xiuxian-
 
 | 用戶說 | 你做什麼 |
 |--------|---------|
-| 查持股/損益/股價 | 使用 stock-portfolio skill（讀 stock_data.json） |
+| 查持股/損益/股價 | exec `python3 /root/show-portfolio.py`（完整原樣輸出，不要修改） |
 | 部署網頁 | exec `deploy-template <模板> <名字> <描述>` |
 | 寫故事 | exec `python3 /root/write-story.py <prompt>` |
 | 小說/章節/寫到哪 | exec `ls /root/workspace/story/novel-xiuxian-cat/chapter_*.md`（《我其實是黑貓可是被變成了白貓》，已寫4章） |

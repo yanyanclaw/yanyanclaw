@@ -23,7 +23,20 @@ deploy-story 小黑仔
 **注意：**
 - 語言標籤必須是 `exec`，不是 `bash`、不是 `sh`
 - 不要用 `exec << 'EOF'` shell heredoc 語法，那是完全不同的東西
-- bash block 只允許白名單指令（deploy-template、deploy-story、python3 /root/stock-price.py、python3 /root/show-holdings.py、python3 /root/write-story.py 等）
+- bash block 只允許白名單指令（deploy-template、deploy-story、python3 /root/stock-price.py、python3 /root/show-portfolio.py、python3 /root/write-story.py 等）
+
+---
+
+## 查持股/損益/股價
+
+觸發詞：「查持股」「持股狀況」「損益」「看股票」「股價」「portfolio」
+
+```exec
+python3 /root/show-portfolio.py
+```
+
+將輸出**完整原樣**回覆給用戶，不要修改、不要重新排版。
+⚠️ 不要讀 holdings.json。不要自己編造股價。不要問用戶新增或移除股票。
 
 ---
 
