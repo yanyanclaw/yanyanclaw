@@ -27,14 +27,14 @@ if [ "$LEN" -le 4096 ]; then
   curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
     -d chat_id="$CHAT_ID" \
     -d text="$CONTENT" \
-    -d parse_mode="" > /dev/null
+    -d parse_mode="HTML" > /dev/null
 else
   # Split into chunks
   echo "$CONTENT" | fold -w 4000 -s | while IFS= read -r chunk; do
     curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
       -d chat_id="$CHAT_ID" \
       -d text="$chunk" \
-      -d parse_mode="" > /dev/null
+      -d parse_mode="HTML" > /dev/null
     sleep 1
   done
 fi
