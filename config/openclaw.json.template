@@ -1,36 +1,23 @@
 {
   "meta": {
-    "lastTouchedVersion": "2026.3.1",
-    "lastTouchedAt": "2026-03-05T20:30:16.987Z"
+    "lastTouchedVersion": "2026.3.2",
+    "lastTouchedAt": "2026-03-13T05:01:51.589Z"
   },
   "models": {
     "mode": "merge",
     "providers": {
-      "ollama": {
-        "baseUrl": "http://localhost:11434",
-        "models": [
-          {
-            "id": "qwen2.5:14b",
-            "name": "qwen2.5:14b"
-          }
-        ]
-      },
-      "mistral": {
-        "baseUrl": "https://api.mistral.ai/v1",
+      "groq": {
+        "baseUrl": "https://api.groq.com/openai/v1",
+        "apiKey": "<GROQ_API_KEY>",
         "api": "openai-completions",
-        "apiKey": "<MISTRAL_API_KEY>",
         "models": [
           {
-            "id": "mistral-small-latest",
-            "name": "Mistral Small"
+            "id": "llama-3.3-70b-versatile",
+            "name": "Llama 3.3 70B (Groq)"
           },
           {
-            "id": "open-mistral-nemo",
-            "name": "Mistral Nemo (free)"
-          },
-          {
-            "id": "magistral-small-latest",
-            "name": "Magistral Small (reasoning)"
+            "id": "llama-3.1-8b-instant",
+            "name": "Llama 3.1 8B (Groq)"
           }
         ]
       }
@@ -39,12 +26,17 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "google/gemini-2.0-flash-lite",
+        "primary": "groq/llama-3.3-70b-versatile",
         "fallbacks": [
           "google/gemini-2.5-flash",
-          "mistral/magistral-small-latest",
-          "mistral/open-mistral-nemo"
+          "google/gemini-3-flash"
         ]
+      },
+      "models": {
+        "google/gemini-2.5-flash": {},
+        "google/gemini-3-flash": {},
+        "groq/llama-3.3-70b-versatile": {},
+        "groq/llama-3.1-8b-instant": {}
       },
       "workspace": "/root/.openclaw/workspace",
       "compaction": {
@@ -53,12 +45,6 @@
       "maxConcurrent": 4,
       "subagents": {
         "maxConcurrent": 8
-      },
-      "models": {
-        "google/gemini-2.0-flash-lite": {},
-        "google/gemini-2.5-flash": {},
-        "mistral/open-mistral-nemo": {},
-        "mistral/magistral-small-latest": {}
       }
     },
     "list": [
@@ -87,7 +73,7 @@
   "tools": {
     "profile": "full",
     "elevated": {
-      "enabled": false,
+      "enabled": true,
       "allowFrom": {
         "telegram": [
           "<TELEGRAM_USER_ID>"
@@ -134,7 +120,7 @@
       "enabled": true,
       "dmPolicy": "pairing",
       "botToken": "<TELEGRAM_BOT_TOKEN>",
-      "groupPolicy": "open",
+      "groupPolicy": "allowlist",
       "streaming": "partial"
     }
   },
@@ -149,6 +135,17 @@
     "tailscale": {
       "mode": "off",
       "resetOnExit": false
+    },
+    "nodes": {
+      "denyCommands": [
+        "camera.snap",
+        "camera.clip",
+        "screen.record",
+        "contacts.add",
+        "calendar.add",
+        "reminders.add",
+        "sms.send"
+      ]
     }
   },
   "skills": {
