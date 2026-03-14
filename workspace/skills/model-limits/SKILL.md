@@ -13,7 +13,7 @@ When the user asks about model limits, rate limits, available models, or says th
 Use exec to run:
 
 ```
-cd /root/openclaw-repo && GROQ_API_KEY=$(python3 -c "import json; print(json.load(open('/root/.openclaw/openclaw.json'))['models']['providers']['groq']['apiKey'])") GOOGLE_API_KEY=$(grep GOOGLE_API_KEY /root/.openclaw/.env | cut -d= -f2) python3 scripts/model_limits.py 2>&1
+cd /root/openclaw-repo && export $(grep -v '^#' /root/.openclaw/.env | xargs) && bash scripts/model-limits.sh -o docs/model-limits.md 2>&1
 ```
 
 ## Step 2: Report changes
@@ -27,7 +27,7 @@ cd /root/openclaw-repo && GROQ_API_KEY=$(python3 -c "import json; print(json.loa
 Read the current fallback config:
 
 ```
-python3 -c "import json; cfg=json.load(open('/root/.openclaw/openclaw.json')); print(json.dumps(cfg['agents']['defaults']['model'], indent=2))"
+jq '.agents.defaults.model' /root/.openclaw/openclaw.json
 ```
 
 Check if any fallback model has status "not found" or is permanently unavailable. If so, suggest removing it.
