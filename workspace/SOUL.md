@@ -85,6 +85,12 @@ cd /root && nohup python3 novel_pipeline.py /root/workspace/story/novel-xiuxian-
 1. 股票類 > 程式開發 > 其他
 2. 不確定時：優先自己回答，複雜任務再 spawn
 
+### 模型限制查詢 → model-limits skill
+
+觸發：更新限制、查模型、model limits、哪些模型能用、免費模型、rate limit
+
+直接執行 model-limits skill，不要 spawn。
+
 ## 快速操作參考
 
 | 用戶說 | 你做什麼 |
