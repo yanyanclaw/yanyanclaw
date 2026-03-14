@@ -3,8 +3,8 @@
 # model-limits.sh — 查詢 Groq / Gemini 免費 tier 可用模型與 rate limit
 #
 # 用法：
-#   GROQ_API_KEY=xxx GOOGLE_API_KEY=yyy ./model-limits.sh
-#   GROQ_API_KEY=xxx GOOGLE_API_KEY=yyy ./model-limits.sh --update-config /path/to/openclaw.json
+#   GROQ_API_KEY=xxx GEMINI_API_KEY=yyy ./model-limits.sh
+#   GROQ_API_KEY=xxx GEMINI_API_KEY=yyy ./model-limits.sh --update-config /path/to/openclaw.json
 #
 # 依賴：curl, jq, bash 4+
 #
@@ -12,7 +12,7 @@ set -euo pipefail
 
 # --- 設定 ---
 GROQ_API_KEY="${GROQ_API_KEY:-}"
-GOOGLE_API_KEY="${GOOGLE_API_KEY:-}"
+GEMINI_API_KEY="${GEMINI_API_KEY:-${GEMINI_API_KEY:-}}"
 UPDATE_CONFIG=""
 OUTPUT_FILE=""
 UA="model-limits/1.0"
@@ -50,7 +50,8 @@ while [[ $# -gt 0 ]]; do
     --output|-o)
       OUTPUT_FILE="$2"; shift 2 ;;
     --help|-h)
-      echo "用法: GROQ_API_KEY=xxx GOOGLE_API_KEY=yyy $0 [options]"
+      echo "用法: GROQ_API_KEY=xxx GEMINI_API_KEY=yyy $0 [options]"
+      echo "       (also accepts GOOGLE_API_KEY as alias for GEMINI_API_KEY)"
       echo ""
       echo "Options:"
       echo "  -o, --output FILE          輸出 markdown 到檔案（預設 stdout）"
@@ -75,7 +76,7 @@ done
 HAS_GROQ=false
 HAS_GEMINI=false
 [[ -n "$GROQ_API_KEY" ]] && HAS_GROQ=true
-[[ -n "$GOOGLE_API_KEY" ]] && HAS_GEMINI=true
+[[ -n "$GEMINI_API_KEY" ]] && HAS_GEMINI=true
 
 # --- 互動引導：缺 key 時提示使用者輸入 ---
 prompt_key() {
@@ -108,18 +109,18 @@ if ! $HAS_GROQ && [[ -t 0 ]]; then
 fi
 
 if ! $HAS_GEMINI && [[ -t 0 ]]; then
-  got=$(prompt_key "GOOGLE_API_KEY" "https://aistudio.google.com/apikey" "$ENV_FILE") && {
-    GOOGLE_API_KEY="$got"
+  got=$(prompt_key "GEMINI_API_KEY" "https://aistudio.google.com/apikey" "$ENV_FILE") && {
+    GEMINI_API_KEY="$got"
     HAS_GEMINI=true
   }
 fi
 
 if ! $HAS_GROQ && ! $HAS_GEMINI; then
-  echo "Error: at least one of GROQ_API_KEY or GOOGLE_API_KEY must be set" >&2
+  echo "Error: at least one of GROQ_API_KEY or GEMINI_API_KEY must be set" >&2
   exit 1
 fi
 $HAS_GROQ  || echo "Warning: GROQ_API_KEY not set, skipping Groq models" >&2
-$HAS_GEMINI || echo "Warning: GOOGLE_API_KEY not set, skipping Gemini models" >&2
+$HAS_GEMINI || echo "Warning: GEMINI_API_KEY not set, skipping Gemini models" >&2
 
 # --- 工具函式 ---
 fmt_num() {
@@ -215,7 +216,7 @@ if $HAS_GEMINI; then
 echo "Fetching Gemini models..." >&2
 
 gemini_models_json=$(curl -sS -H "User-Agent: $UA" \
-  "https://generativelanguage.googleapis.com/v1beta/models?key=$GOOGLE_API_KEY")
+  "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY")
 
 # 檢查 API 是否回傳錯誤
 gemini_error=$(echo "$gemini_models_json" | jq -r '.error.message // empty' 2>/dev/null)
@@ -241,7 +242,7 @@ for mid in $gemini_model_ids; do
     -H "Content-Type: application/json" \
     -H "User-Agent: $UA" \
     -d '{"contents":[{"parts":[{"text":"say ok"}]}],"generationConfig":{"maxOutputTokens":1}}' \
-    "https://generativelanguage.googleapis.com/v1beta/models/${mid}:generateContent?key=$GOOGLE_API_KEY" \
+    "https://generativelanguage.googleapis.com/v1beta/models/${mid}:generateContent?key=$GEMINI_API_KEY" \
     2>/dev/null || true)
 
   test_http=$(echo "$test_resp" | tail -1)
