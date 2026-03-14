@@ -65,18 +65,61 @@ done
 for cmd in curl jq; do
   if ! command -v "$cmd" &>/dev/null; then
     echo "Error: $cmd is required but not installed." >&2
+    echo "  Install: apt install $cmd  (Debian/Ubuntu)" >&2
+    echo "           brew install $cmd  (macOS)" >&2
+    echo "           yum install $cmd   (CentOS/RHEL)" >&2
     exit 1
   fi
 done
 
-if [[ -z "$GROQ_API_KEY" ]]; then
-  echo "Error: GROQ_API_KEY not set" >&2
+HAS_GROQ=false
+HAS_GEMINI=false
+[[ -n "$GROQ_API_KEY" ]] && HAS_GROQ=true
+[[ -n "$GOOGLE_API_KEY" ]] && HAS_GEMINI=true
+
+# --- 互動引導：缺 key 時提示使用者輸入 ---
+prompt_key() {
+  local name="$1" url="$2" env_file="$3"
+  echo "" >&2
+  echo "$name not found." >&2
+  echo "Get your free key at: $url" >&2
+  read -rp "Paste your $name here (or press Enter to skip): " key
+  if [[ -z "$key" ]]; then
+    return 1
+  fi
+  echo "$key"
+  # 詢問是否存到 .env
+  if [[ -n "$env_file" ]]; then
+    read -rp "Save to $env_file for next time? [Y/n] " save
+    if [[ "$save" != "n" && "$save" != "N" ]]; then
+      echo "${name}=${key}" >> "$env_file"
+      echo "Saved to $env_file" >&2
+    fi
+  fi
+}
+
+ENV_FILE="${ENV_FILE:-}"  # 可透過 ENV_FILE=/path/.env 指定儲存位置
+
+if ! $HAS_GROQ && [[ -t 0 ]]; then
+  got=$(prompt_key "GROQ_API_KEY" "https://console.groq.com/keys" "$ENV_FILE") && {
+    GROQ_API_KEY="$got"
+    HAS_GROQ=true
+  }
+fi
+
+if ! $HAS_GEMINI && [[ -t 0 ]]; then
+  got=$(prompt_key "GOOGLE_API_KEY" "https://aistudio.google.com/apikey" "$ENV_FILE") && {
+    GOOGLE_API_KEY="$got"
+    HAS_GEMINI=true
+  }
+fi
+
+if ! $HAS_GROQ && ! $HAS_GEMINI; then
+  echo "Error: at least one of GROQ_API_KEY or GOOGLE_API_KEY must be set" >&2
   exit 1
 fi
-if [[ -z "$GOOGLE_API_KEY" ]]; then
-  echo "Error: GOOGLE_API_KEY not set" >&2
-  exit 1
-fi
+$HAS_GROQ  || echo "Warning: GROQ_API_KEY not set, skipping Groq models" >&2
+$HAS_GEMINI || echo "Warning: GOOGLE_API_KEY not set, skipping Gemini models" >&2
 
 # --- 工具函式 ---
 fmt_num() {
@@ -111,6 +154,10 @@ gemini_known_limit() {
 }
 
 # --- Groq ---
+declare -a GROQ_ROWS=()
+declare -a ALL_GROQ_MODELS=()
+
+if $HAS_GROQ; then
 echo "Fetching Groq models..." >&2
 
 groq_models_json=$(curl -sS -H "Authorization: Bearer $GROQ_API_KEY" \
@@ -125,9 +172,6 @@ if [[ -n "$groq_error" ]]; then
 else
   groq_model_ids=$(echo "$groq_models_json" | jq -r '.data[] | .id' | grep -vE "$GROQ_SKIP" | sort)
 fi
-
-declare -a GROQ_ROWS=()
-declare -a ALL_GROQ_MODELS=()
 
 for mid in $groq_model_ids; do
   echo "  Testing $mid..." >&2
@@ -161,7 +205,13 @@ for mid in $groq_model_ids; do
   ALL_GROQ_MODELS+=("$mid:$rpd:$tpm:$status")
 done
 
+fi  # HAS_GROQ
+
 # --- Gemini ---
+declare -a GEMINI_ROWS=()
+declare -a ALL_GEMINI_MODELS=()
+
+if $HAS_GEMINI; then
 echo "Fetching Gemini models..." >&2
 
 gemini_models_json=$(curl -sS -H "User-Agent: $UA" \
@@ -181,9 +231,6 @@ else
     | sub("^models/"; "")
   ' | grep -vE "$GEMINI_SKIP" | sort)
 fi
-
-declare -a GEMINI_ROWS=()
-declare -a ALL_GEMINI_MODELS=()
 
 for mid in $gemini_model_ids; do
   echo "  Testing $mid..." >&2
@@ -229,25 +276,35 @@ for mid in $gemini_model_ids; do
   ALL_GEMINI_MODELS+=("$mid:$rpd:$tpm:$status")
 done
 
+fi  # HAS_GEMINI
+
 # --- 產生 Markdown ---
 NOW=$(TZ=Asia/Taipei date "+%Y-%m-%d %H:%M (TW)")
 
 md="# Model Rate Limits (Free Tier)
 
 Last updated: $NOW
+"
 
+if $HAS_GROQ; then
+md+="
 ## Groq
 
 | Model | Context | RPD | TPM | Status |
 |-------|---------|-----|-----|--------|
 $(if [[ ${#GROQ_ROWS[@]} -gt 0 ]]; then printf '%s\n' "${GROQ_ROWS[@]}"; else echo "| (no models found) | — | — | — | — |"; fi)
+"
+fi
 
+if $HAS_GEMINI; then
+md+="
 ## Gemini
 
 | Model | Display Name | RPM | RPD | TPM | Status |
 |-------|-------------|-----|-----|-----|--------|
 $(if [[ ${#GEMINI_ROWS[@]} -gt 0 ]]; then printf '%s\n' "${GEMINI_ROWS[@]}"; else echo "| (no models found) | — | — | — | — | — |"; fi)
 "
+fi
 
 # --- 輸出 ---
 if [[ -n "$OUTPUT_FILE" ]]; then
