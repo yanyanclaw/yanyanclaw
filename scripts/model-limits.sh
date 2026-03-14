@@ -12,7 +12,7 @@ set -euo pipefail
 
 # --- 設定 ---
 GROQ_API_KEY="${GROQ_API_KEY:-}"
-GEMINI_API_KEY="${GEMINI_API_KEY:-${GEMINI_API_KEY:-}}"
+GEMINI_API_KEY="${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}"
 UPDATE_CONFIG=""
 OUTPUT_FILE=""
 UA="model-limits/1.0"
@@ -21,7 +21,7 @@ UA="model-limits/1.0"
 GROQ_SKIP="whisper-large-v3|whisper-large-v3-turbo|llama-prompt-guard|orpheus"
 
 # Gemini 排除關鍵字
-GEMINI_SKIP="tts|embedding|imagen|robotics|computer-use|deep-research|nano-banana|image-preview"
+GEMINI_SKIP="tts|embedding|imagen|robotics|computer-use|deep-research|nano-banana|image-preview|gemma"
 
 # Gemini 已知限制 (model_prefix:RPM:RPD:TPM)
 GEMINI_KNOWN=(
@@ -34,12 +34,6 @@ GEMINI_KNOWN=(
   "gemini-3-pro-preview:5:100:250000"
   "gemini-3.1-flash-lite-preview:15:1000:250000"
   "gemini-3.1-pro-preview:5:100:250000"
-  "gemma-3-27b-it:15:1000:250000"
-  "gemma-3-12b-it:15:1000:250000"
-  "gemma-3-4b-it:15:1000:250000"
-  "gemma-3-1b-it:30:1000:250000"
-  "gemma-3n-e4b-it:15:1000:250000"
-  "gemma-3n-e2b-it:30:1000:250000"
 )
 
 # --- 參數解析 ---
@@ -63,7 +57,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --- 檢查依賴 ---
-for cmd in curl jq; do
+for cmd in curl jq bc; do
   if ! command -v "$cmd" &>/dev/null; then
     echo "Error: $cmd is required but not installed." >&2
     echo "  Install: apt install $cmd  (Debian/Ubuntu)" >&2
@@ -183,7 +177,7 @@ for mid in $groq_model_ids; do
     -H "Authorization: Bearer $GROQ_API_KEY" \
     -H "Content-Type: application/json" \
     -H "User-Agent: $UA" \
-    -d "{\"model\":\"$mid\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"max_tokens\":1}" \
+    -d "$(jq -nc --arg m "$mid" '{model:$m,messages:[{role:"user",content:"hi"}],max_tokens:1}')" \
     "https://api.groq.com/openai/v1/chat/completions" 2>/dev/null || true)
 
   # 解析：最後三行是 http_code, rpd, tpm
@@ -311,9 +305,6 @@ fi
 if [[ -n "$OUTPUT_FILE" ]]; then
   # 比對舊檔
   if [[ -f "$OUTPUT_FILE" ]]; then
-    old_models=$(grep '^|' "$OUTPUT_FILE" | grep -v '^|[-—]' | grep -v 'Model' | awk -F'|' '{print $2}' | xargs)
-    new_models_list=$(echo "$md" | grep '^|' | grep -v '^|[-—]' | grep -v 'Model' | awk -F'|' '{print $2}' | xargs)
-
     diff_out=$(diff <(grep '^|' "$OUTPUT_FILE" | grep -v '^|[-—]' | grep -v 'Model' | sort) \
                     <(echo "$md" | grep '^|' | grep -v '^|[-—]' | grep -v 'Model' | sort) 2>/dev/null || true)
     if [[ -n "$diff_out" ]]; then
@@ -343,6 +334,19 @@ if [[ -n "$UPDATE_CONFIG" ]]; then
   echo "" >&2
   echo "=== Updating fallback chain ===" >&2
 
+  # 從 config 讀取 provider 前綴（掃 baseUrl 含 groq.com 的 key）
+  groq_prefix=$(jq -r '
+    .models.providers // {} | to_entries[]
+    | select(.value.baseUrl // "" | test("groq\\.com"))
+    | .key' "$UPDATE_CONFIG" | head -1)
+  [[ -z "$groq_prefix" ]] && groq_prefix="groq"
+
+  # Gemini 用 google/ 前綴（openclaw 內建）
+  gemini_prefix="google"
+
+  echo "Groq provider prefix: $groq_prefix" >&2
+  echo "Gemini provider prefix: $gemini_prefix" >&2
+
   # 收集可用模型（status=ok, TPM >= 6000）
   declare -a candidates=()
 
@@ -350,7 +354,9 @@ if [[ -n "$UPDATE_CONFIG" ]]; then
     IFS=: read -r mid rpd tpm status <<< "$entry"
     if [[ "$status" == "ok" && "$tpm" != "?" ]]; then
       if (( tpm >= 6000 )); then
-        candidates+=("groq/$mid:$tpm")
+        # Groq model ID 可能含 org/ 前綴（如 meta-llama/llama-4-...），只取最後部分
+        short_mid="${mid##*/}"
+        candidates+=("$groq_prefix/$short_mid:$tpm")
       fi
     fi
   done
@@ -359,7 +365,7 @@ if [[ -n "$UPDATE_CONFIG" ]]; then
     IFS=: read -r mid rpd tpm status <<< "$entry"
     if [[ "$status" == "ok" && "$tpm" != "?" ]]; then
       if (( tpm >= 6000 )); then
-        candidates+=("google/$mid:$tpm")
+        candidates+=("$gemini_prefix/$mid:$tpm")
       fi
     fi
   done
@@ -377,6 +383,8 @@ if [[ -n "$UPDATE_CONFIG" ]]; then
   if [[ -z "$primary" ]]; then
     primary=$(jq -r '.agents.defaults.model // empty' "$UPDATE_CONFIG")
   fi
+  # 取 primary 的 model ID 部分（去掉 provider/ 前綴）用於比對
+  primary_model_id="${primary##*/}"
 
   echo "Primary (unchanged): $primary" >&2
   echo "New fallback chain:" >&2
@@ -385,8 +393,9 @@ if [[ -n "$UPDATE_CONFIG" ]]; then
   fallback_json="["
   first=true
   while IFS=: read -r model_with_prefix tpm; do
-    # 跳過 primary
-    if [[ "$model_with_prefix" == *"$primary"* ]]; then
+    # 跳過 primary（比對 model ID 部分，不受前綴影響）
+    candidate_model_id="${model_with_prefix##*/}"
+    if [[ "$candidate_model_id" == "$primary_model_id" ]]; then
       continue
     fi
     echo "  - $model_with_prefix (TPM: $(fmt_num "$tpm"))" >&2
@@ -399,9 +408,21 @@ if [[ -n "$UPDATE_CONFIG" ]]; then
   done <<< "$sorted_candidates"
   fallback_json+="]"
 
-  # 更新 JSON
+  # 備份原始 config
+  cp "$UPDATE_CONFIG" "${UPDATE_CONFIG}.bak"
+  echo "Backup saved: ${UPDATE_CONFIG}.bak" >&2
+
+  # 建構 models allowlist JSON（保留現有 + 加入新 fallback）
+  models_json=$(jq -r '.agents.defaults.models // {}' "$UPDATE_CONFIG")
+  for fb_model in $(echo "$fallback_json" | jq -r '.[]'); do
+    models_json=$(echo "$models_json" | jq --arg m "$fb_model" '. + {($m): {}}')
+  done
+
+  # 更新 JSON（fallbacks + models allowlist）
   tmp_config=$(mktemp)
-  jq --argjson fb "$fallback_json" '.agents.defaults.model.fallbacks = $fb' "$UPDATE_CONFIG" > "$tmp_config"
+  jq --argjson fb "$fallback_json" --argjson ml "$models_json" \
+    '.agents.defaults.model.fallbacks = $fb | .agents.defaults.models = $ml' \
+    "$UPDATE_CONFIG" > "$tmp_config"
   mv "$tmp_config" "$UPDATE_CONFIG"
 
   echo "" >&2
