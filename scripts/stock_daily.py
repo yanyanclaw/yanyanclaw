@@ -11,10 +11,10 @@ from pathlib import Path
 
 STOCK_DATA     = Path("/root/stock_data.json")
 ANALYSIS_DIR   = Path("/root")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyClrVzYGnr6XIx7G7S3LiTgujOaRD2PLXY")
-BRAVE_API_KEY  = os.environ.get("BRAVE_API_KEY",  "BSADQHfgEJ8-xga4iFe2Frc9TAFg64R")
-TG_TOKEN = "8723576581:AAFAT6Oxr4oLZxL6ievMgK77fURnFLXT2j0"
-TG_CHAT  = "707551310"
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+BRAVE_API_KEY  = os.environ.get("BRAVE_API_KEY", "")
+TG_TOKEN = os.environ.get("TG_TOKEN", "")
+TG_CHAT  = os.environ.get("TG_CHAT", "")
 
 GEMINI_MODELS = [
     "gemini-2.5-flash",
