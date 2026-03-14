@@ -9,9 +9,25 @@ REMOTE_PATH="/root/openclaw-repo/stock/stock_data/stock_report.md"
 BOT_TOKEN="${OPENCLAW_BOT_TOKEN:?Set OPENCLAW_BOT_TOKEN in ~/.zshrc}"
 CHAT_ID="${OPENCLAW_CHAT_ID:-707551310}"
 
+REPORT_DIR="$(dirname "$REPORT")"
+REPO_ROOT="/Users/yan/Documents/workspace/openclaw"
+
 if [ ! -f "$REPORT" ]; then
   echo "❌ $REPORT not found"
   exit 1
+fi
+
+# 0. Archive previous report as history
+PREV_DATE=$(date -v-1d +%Y%m%d 2>/dev/null || date -d "yesterday" +%Y%m%d)
+HISTORY_FILE="${REPORT_DIR}/stock_report_${PREV_DATE}.md"
+if [ ! -f "$HISTORY_FILE" ]; then
+  cp "$REPORT" "$HISTORY_FILE"
+  cd "$REPO_ROOT"
+  git add "$HISTORY_FILE"
+  git commit -m "archive: stock report ${PREV_DATE}
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
+  echo "📁 Archived as stock_report_${PREV_DATE}.md"
 fi
 
 # 1. SCP to remote

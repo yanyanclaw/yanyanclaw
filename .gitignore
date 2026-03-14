@@ -18,5 +18,8 @@ workspace/BOOTSTRAP.md
 # OS
 .DS_Store
 
+# Stock (current report is dynamic, history files are committed)
+stock/stock_data/stock_report.md
+
 # Misc
 hello
