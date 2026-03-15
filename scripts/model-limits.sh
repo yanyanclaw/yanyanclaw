@@ -21,7 +21,10 @@ UA="model-limits/1.0"
 GROQ_SKIP="whisper-large-v3|whisper-large-v3-turbo|llama-prompt-guard|orpheus"
 
 # Gemini 排除關鍵字
-GEMINI_SKIP="tts|embedding|imagen|robotics|computer-use|deep-research|nano-banana|image-preview|gemma"
+GEMINI_SKIP="tts|embedding|imagen|robotics|computer-use|deep-research|nano-banana|image-preview|gemma|flash-image|-latest$|gemini.*pro|gemini-2\.0|preview-09-2025|-001$|customtools"
+
+# 弱模型過濾（參數量太小，不實用）— 兩邊 provider 都套用
+WEAK_MODELS="[^a-z][1-8]b[^0-9]|e[24]b-it|8b-instant|scout-17b|compound|allam|safeguard|gpt-oss-20b"
 
 # Gemini 已知限制 (model_prefix:RPM:RPD:TPM)
 GEMINI_KNOWN=(
@@ -165,7 +168,7 @@ if [[ -n "$groq_error" ]]; then
   echo "Skipping Groq models." >&2
   groq_model_ids=""
 else
-  groq_model_ids=$(echo "$groq_models_json" | jq -r '.data[] | .id' | grep -vE "$GROQ_SKIP" | sort)
+  groq_model_ids=$(echo "$groq_models_json" | jq -r '.data[] | .id' | grep -vE "$GROQ_SKIP" | grep -vE "$WEAK_MODELS" | sort)
 fi
 
 for mid in $groq_model_ids; do
@@ -173,17 +176,17 @@ for mid in $groq_model_ids; do
   ctx=$(echo "$groq_models_json" | jq -r ".data[] | select(.id==\"$mid\") | .context_window // \"?\"")
 
   # 發最小請求取 rate limit headers
-  resp=$(curl -sS -w '\n%{http_code}\n%header{x-ratelimit-limit-requests}\n%header{x-ratelimit-limit-tokens}' \
+  resp=$(curl -sS -D /tmp/groq_headers.txt -w '\n%{http_code}' \
     -H "Authorization: Bearer $GROQ_API_KEY" \
     -H "Content-Type: application/json" \
     -H "User-Agent: $UA" \
     -d "$(jq -nc --arg m "$mid" '{model:$m,messages:[{role:"user",content:"hi"}],max_tokens:1}')" \
     "https://api.groq.com/openai/v1/chat/completions" 2>/dev/null || true)
 
-  # 解析：最後三行是 http_code, rpd, tpm
-  http_code=$(echo "$resp" | tail -3 | head -1)
-  rpd=$(echo "$resp" | tail -2 | head -1)
-  tpm=$(echo "$resp" | tail -1)
+  # 解析：http_code 從 curl output，rpd/tpm 從 header file
+  http_code=$(echo "$resp" | tail -1)
+  rpd=$(grep -i 'x-ratelimit-limit-requests' /tmp/groq_headers.txt 2>/dev/null | awk '{print $2}' | tr -d '\r')
+  tpm=$(grep -i 'x-ratelimit-limit-tokens' /tmp/groq_headers.txt 2>/dev/null | awk '{print $2}' | tr -d '\r')
 
   [[ -z "$rpd" || "$rpd" == "" ]] && rpd="?"
   [[ -z "$tpm" || "$tpm" == "" ]] && tpm="?"
@@ -224,7 +227,7 @@ else
     | select(.supportedGenerationMethods | index("generateContent"))
     | .name
     | sub("^models/"; "")
-  ' | grep -vE "$GEMINI_SKIP" | sort)
+  ' | grep -vE "$GEMINI_SKIP" | grep -vE "$WEAK_MODELS" | sort)
 fi
 
 for mid in $gemini_model_ids; do
