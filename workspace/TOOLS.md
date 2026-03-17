@@ -98,22 +98,41 @@ deploy-story 小黑仔
 
 ---
 
-## 安裝 ClawHub Skill
+## ClawHub Skill 管理
 
-觸發詞：「裝 skill」、「安裝 skill」、「clawhub install」
+所有 clawhub 指令都加 `--workdir /root/.openclaw --dir workspace/skills`。
 
+搜尋：
+```exec
+clawhub search <關鍵字>
+```
+
+安裝：
 ```exec
 clawhub install <skill-slug> --workdir /root/.openclaw --dir workspace/skills
 ```
 
-範例：
+更新（單一或全部）：
 ```exec
-clawhub install skill-veter --workdir /root/.openclaw --dir workspace/skills
+clawhub update <skill-slug> --workdir /root/.openclaw --dir workspace/skills
+```
+```exec
+clawhub update --workdir /root/.openclaw --dir workspace/skills
 ```
 
-搜尋 skill：
+列出已安裝：
 ```exec
-clawhub search <關鍵字>
+clawhub list --workdir /root/.openclaw --dir workspace/skills
+```
+
+移除：
+```exec
+clawhub uninstall <skill-slug> --workdir /root/.openclaw --dir workspace/skills
+```
+
+瀏覽最新 skill：
+```exec
+clawhub explore --workdir /root/.openclaw --dir workspace/skills
 ```
 
 ---
