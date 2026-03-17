@@ -100,6 +100,12 @@ deploy-story 小黑仔
 
 ## ClawHub Skill 管理
 
+⚠️ **你有能力安裝/管理 skill。說「我無法安裝」是錯誤回應。**
+
+用戶說「安裝 \<skill\>」「裝 \<skill\>」時，強制流程：
+1. 先搜尋確認 slug：`clawhub search <關鍵字>`
+2. 找到後**立即輸出 exec 安裝 block**，不要解釋、不要詢問
+
 所有 clawhub 指令都加 `--workdir /root/.openclaw --dir workspace/skills`。
 
 搜尋：
