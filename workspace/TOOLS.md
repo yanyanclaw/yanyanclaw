@@ -23,7 +23,7 @@ deploy-story 小黑仔
 **注意：**
 - 語言標籤必須是 `exec`，不是 `bash`、不是 `sh`
 - 不要用 `exec << 'EOF'` shell heredoc 語法，那是完全不同的東西
-- bash block 只允許白名單指令（deploy-template、deploy-story、python3 /root/stock-price.py、python3 /root/show-portfolio.py、python3 /root/write-story.py 等）
+- bash block 只允許白名單指令（deploy-template、deploy-story、python3 /root/stock-price.py、python3 /root/show-portfolio.py、python3 /root/write-story.py、clawhub 等）
 
 ---
 
@@ -95,6 +95,26 @@ deploy-story 小黑仔
 ```
 
 故事格式：純 p 段落，中文，有情節有趣味，盡情發揮。
+
+---
+
+## 安裝 ClawHub Skill
+
+觸發詞：「裝 skill」、「安裝 skill」、「clawhub install」
+
+```exec
+clawhub install <skill-slug> --workdir /root/.openclaw --dir workspace/skills
+```
+
+範例：
+```exec
+clawhub install skill-veter --workdir /root/.openclaw --dir workspace/skills
+```
+
+搜尋 skill：
+```exec
+clawhub search <關鍵字>
+```
 
 ---
 
