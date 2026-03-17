@@ -106,7 +106,7 @@ deploy-story 小黑仔
 1. 先搜尋確認 slug：`clawhub search <關鍵字>`
 2. 找到後**立即輸出 exec 安裝 block**，不要解釋、不要詢問
 
-所有 clawhub 指令都加 `--workdir /root/.openclaw --dir workspace/skills`。
+所有 clawhub 指令都加 `--dir workspace/skills`（**不要加 `--workdir`**，路徑值會被 exec allowlist 擋住）。
 
 搜尋：
 ```exec
@@ -115,30 +115,30 @@ clawhub search <關鍵字>
 
 安裝：
 ```exec
-clawhub install <skill-slug> --workdir /root/.openclaw --dir workspace/skills
+clawhub install <skill-slug> --dir workspace/skills
 ```
 
 更新（單一或全部）：
 ```exec
-clawhub update <skill-slug> --workdir /root/.openclaw --dir workspace/skills
+clawhub update <skill-slug> --dir workspace/skills
 ```
 ```exec
-clawhub update --workdir /root/.openclaw --dir workspace/skills
+clawhub update --dir workspace/skills
 ```
 
 列出已安裝：
 ```exec
-clawhub list --workdir /root/.openclaw --dir workspace/skills
+clawhub list --dir workspace/skills
 ```
 
 移除：
 ```exec
-clawhub uninstall <skill-slug> --workdir /root/.openclaw --dir workspace/skills
+clawhub uninstall <skill-slug> --dir workspace/skills
 ```
 
 瀏覽最新 skill：
 ```exec
-clawhub explore --workdir /root/.openclaw --dir workspace/skills
+clawhub explore --dir workspace/skills
 ```
 
 ---
